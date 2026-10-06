@@ -17,7 +17,7 @@
 -- PROGRAM "Quartus Prime"
 -- VERSION "Version 22.1std.2 Build 922 07/20/2023 SC Lite Edition"
 
--- DATE "10/06/2026 10:14:43"
+-- DATE "10/06/2026 11:09:28"
 
 -- 
 -- Device: Altera 10M50DAF484C7G Package FBGA484
@@ -92,21 +92,21 @@ ENTITY 	ssi_protocol IS
     PORT (
 	MAX10_CLK1_50 : IN std_logic;
 	SW : IN std_logic_vector(9 DOWNTO 7);
-	HEX0 : OUT std_logic_vector(6 DOWNTO 0);
-	HEX1 : OUT std_logic_vector(6 DOWNTO 0);
-	HEX2 : OUT std_logic_vector(6 DOWNTO 0);
-	HEX3 : OUT std_logic_vector(6 DOWNTO 0);
-	HEX4 : OUT std_logic_vector(6 DOWNTO 0);
-	HEX5 : OUT std_logic_vector(6 DOWNTO 0);
+	HEX0 : BUFFER std_logic_vector(6 DOWNTO 0);
+	HEX1 : BUFFER std_logic_vector(6 DOWNTO 0);
+	HEX2 : BUFFER std_logic_vector(6 DOWNTO 0);
+	HEX3 : BUFFER std_logic_vector(6 DOWNTO 0);
+	HEX4 : BUFFER std_logic_vector(6 DOWNTO 0);
+	HEX5 : BUFFER std_logic_vector(6 DOWNTO 0);
 	GPIO : IN std_logic_vector(35 DOWNTO 35);
-	GPIO_data : OUT std_logic;
+	GPIO_data : BUFFER std_logic;
 	reset_nrst : IN std_logic;
-	LEDR : OUT std_logic_vector(9 DOWNTO 0);
-	ARDUINO_IO : OUT std_logic_vector(1 DOWNTO 1);
-	GSENSOR_SDI : OUT std_logic;
+	LEDR : BUFFER std_logic_vector(9 DOWNTO 0);
+	ARDUINO_IO : BUFFER std_logic_vector(1 DOWNTO 1);
+	GSENSOR_SDI : BUFFER std_logic;
 	GSENSOR_SDO : IN std_logic;
-	GSENSOR_CS_N : OUT std_logic;
-	GSENSOR_SCLK : OUT std_logic
+	GSENSOR_CS_N : BUFFER std_logic;
+	GSENSOR_SCLK : BUFFER std_logic
 	);
 END ssi_protocol;
 

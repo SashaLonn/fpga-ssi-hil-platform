@@ -61,15 +61,17 @@ derive_clock_uncertainty
 #set_false_path -from [get_registers *] -to [get_ports {ssi_clk}]
 set_false_path -from [get_ports {SW*}] -to  [get_registers *]
 set_false_path -from [get_ports {GPIO_data*}] -to  [get_registers *]
+set_false_path -from [get_ports {GPIO*}] -to  [get_registers *]
+set_false_path -from [get_ports {GSENSOR_SDO*}] -to  [get_registers *]
+set_false_path -from [get_ports {reset_nrst*}] -to  [get_registers *]
 
-set_false_path -from [get_registers *] -to [get_ports {HEX0[*]}]
-set_false_path -from [get_registers *] -to [get_ports {HEX1[*]}]
-set_false_path -from [get_registers *] -to [get_ports {HEX2[*]}]
-set_false_path -from [get_registers *] -to [get_ports {HEX3[*]}]
-set_false_path -from [get_registers *] -to [get_ports {HEX4[*]}]
-set_false_path -from [get_registers *] -to [get_ports {HEX5[*]}]
+set_false_path -from [get_registers *] -to [get_ports {GSENSOR_SDI}]
+set_false_path -from [get_registers *] -to [get_ports {GPIO_data}]
 set_false_path -from [get_registers *] -to [get_ports {LEDR[*]}]
-set_false_path -from [get_registers *] -to [get_ports {GPIO[*]}]
+set_false_path -from [get_registers *] -to [get_ports {GSENSOR_CS_N}]
+set_false_path -from [get_registers *] -to [get_ports {GSENSOR_SCLK}]
+
+
 
 
 
