@@ -15,6 +15,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use work.ssi_pkg.all;
+use work.ssi_uart_ll_pkg.all;
 
 entity ssi_master is 
 port (
@@ -30,6 +31,7 @@ port (
     HEX3                      :out std_logic_vector(6 DOWNTO 0);
     HEX4                      :out std_logic_vector(6 DOWNTO 0);
     HEX5                      :out std_logic_vector(6 DOWNTO 0);
+    uart_tx                   :out std_logic;
     LEDR                      :out std_logic
 );
 end ssi_master;
@@ -37,12 +39,14 @@ end ssi_master;
 architecture rtl of ssi_master is
 
   signal ssi_clk_i                   :std_logic;
+  signal ssi_clk_old                 :std_logic;
   --ssi signals
   signal ssi_clk_hp_counter           :integer range 0 to ssi_clk_hp_count; 
   signal ssi_bit_counter              :integer range 0 to ssi_bit_count; 
   signal run_ssi_clk_counter          :std_logic;
   signal run_pt_counter               :std_logic;
   signal ssi_position                 :std_logic_vector(POSITION_DATA_WIDTH_MAX - 1 downto 0);
+  signal ssi_position_read1           :std_logic_vector(POSITION_DATA_WIDTH_MAX - 1 downto 0);
   signal ssi_position_read            :std_logic_vector(POSITION_DATA_WIDTH_MAX - 1 downto 0);
    
   --ssi2 signals 
@@ -92,7 +96,19 @@ architecture rtl of ssi_master is
   signal data_sync_2                  :std_logic;
   
   signal pt_counter                   :integer range 0 to pt_count;
+  type state_type is (IDLE, RECEIVING, PAUSE,READY);
+  signal ssi_state : state_type := PAUSE;
   
+  --uart signals
+   signal uart_start_transmition      :std_logic;
+   signal uart_busy                   :std_logic;
+   signal uart_ready                  :std_logic;
+   signal new_pos_ready               :std_logic;
+   signal data_in                     :std_logic_vector(POSITION_DATA_WIDTH_MAX-1 downto 0);
+   signal pos_ready_d1                :std_logic;
+   signal pos_ready_d2                :std_logic;
+   signal uart_pending                :std_logic := '0';
+   
 begin
 
   ssi_clk            <= ssi2_clk_i when ssi2_mode = '1' else ssi_clk_i;
@@ -107,60 +123,142 @@ begin
   HEX4 <= HEX4_internal;
   HEX5 <= HEX5_internal;
   
+  
+   
+ -- 1. Instansiering av UART-modulen
+  uart_ll_inst: entity work.ssi_uart_ll
+    generic map(
+        POS_WIDTH     => POSITION_DATA_WIDTH_MAX,                 --8 bitar (1 bytes)
+        CLOCK_FREQ_HZ => CLOCK_FREQ_HZ,
+        BAUDRATE      => BAUDRATE
+    )
+    port map(
+        clk       => clk,
+        reset_n   => reset_n,
+        
+        -- Gränssnitt mot positionsmodulen
+        pos_data  => data_in,
+        pos_ready => uart_start_transmition, -- Knyts till din trigg-signal
+        busy      => uart_busy,              -- Drivs DIREKT av UART-modulen!
+        
+        -- Fysisk TX-pinne till PC
+        txd       => uart_tx
+    );
+
+  -- 2. Styrprocess för att trigga sändning
+  process(clk, reset_n)
+  
+  begin
+    if reset_n = '0' then
+        uart_start_transmition <= '0';
+        uart_pending           <= '0';
+    
+        data_in                <= (others => '0');
+
+
+    elsif rising_edge(clk) then
+    
+        uart_start_transmition <= '0';        
+        -- Ny SSI-data
+        if new_pos_ready = '1' then
+            data_in <=  ssi_position_read;
+            uart_pending <= '1';
+        end if;
+    
+        -- Vänta tills UART är ledig
+        if uart_pending = '1' and uart_busy = '0' then
+            uart_start_transmition <= '1';
+            led <= uart_busy;
+            uart_pending <= '0';
+        end if;
+    end if;
+  end process;
+  
+  
   ssi_proc: process(reset_n, clk) 
   begin
     if reset_n = '0' then 
       ssi_clk_i           <= '1';
+      ssi_clk_old         <= '1';
+      new_pos_ready       <= '0';
       ssi_clk_hp_counter  <=  0;
-      run_ssi_clk_counter <= '1';
+      run_ssi_clk_counter <= '0';
       run_pt_counter      <= '0';
       ssi_bit_counter     <=  0;
       pt_counter          <=  0;
       ssi_position_read   <=  (others => '0');
+      ssi_position_read1  <=  (others => '0');
       ssi_position        <=  (others => '0');
+      ssi_state           <= PAUSE;
       
-    elsif clk 'event and clk = '1' then
-    
-      if run_ssi_clk_counter = '1' then  
-        if ssi_clk_hp_counter = ssi_clk_hp_count then
-          ssi_clk_hp_counter <= 0;
-          ssi_clk_i <= not ssi_clk_i;
-          if ssi_clk_i = '0' then
-            if ssi_bit_counter < ssi_bit_count then
-              ssi_position(0)                <= data_sync_2;
-              ssi_position(POSITION_DATA_WIDTH_MAX - 1 downto 1)  <= ssi_position(POSITION_DATA_WIDTH_MAX- 2 downto 0);
-              ssi_bit_counter                <= ssi_bit_counter + 1;
-              
-            end if;
-              if ssi_bit_counter = ssi_bit_count  then
-                ssi_bit_counter     <=  0;
-                run_ssi_clk_counter <= '0';
-                run_pt_counter      <= '1'; 
-              end if;       
-          end if;
-        else
-          ssi_clk_hp_counter <= ssi_clk_hp_counter + 1;  
-        end if;  
-      end if;
-        
-      
-      if run_pt_counter = '1' then
-        if pt_counter >= pt_count then
-          run_pt_counter  <= '0';
-          pt_counter      <=  0;
-          run_ssi_clk_counter <= '1';
-        else
-          pt_counter      <= pt_counter + 1;
-          new_pos             <= '1'; 
-        end if;
-      end if;
-      
-     if new_pos = '1' then
-        ssi_position_read <= ssi_position;
-        new_pos             <= '0';  
-      end if;
+    elsif rising_edge(clk) then
+
+    ssi_clk_old <= ssi_clk_i;
+    new_pos_ready       <= '0';    
+    if run_ssi_clk_counter = '1' then  
+      if ssi_clk_hp_counter = ssi_clk_hp_count then
+        ssi_clk_hp_counter <= 0;
+        ssi_clk_i          <= not ssi_clk_i;          
+      else
+        ssi_clk_hp_counter <= ssi_clk_hp_counter + 1;        
+      end if; 
+    else
+      ssi_clk_hp_counter <= 0;
+      ssi_clk_i          <= '1';     
     end if;
+      
+    -- 3. TILLSTÅNDSMASKIN
+    case ssi_state is
+      when IDLE =>
+        ssi_bit_counter     <= 0;
+        run_ssi_clk_counter <= '1';
+        pt_counter          <= 0;
+       
+        ssi_state           <= RECEIVING;
+
+      when RECEIVING =>
+        -- Skifta vid fallande flank
+        if ssi_clk_old = '1' and ssi_clk_i = '0' then
+          if ssi_bit_counter < ssi_bit_count then
+            ssi_position(0) <= data_sync_2;
+            ssi_position(POSITION_DATA_WIDTH_MAX - 1 downto 1) <= ssi_position(POSITION_DATA_WIDTH_MAX - 2 downto 0);
+            ssi_bit_counter <= ssi_bit_counter + 1;
+          end if;
+          if ssi_bit_counter = ssi_bit_count then            
+            --ssi_position_read1  <= ssi_position(POSITION_DATA_WIDTH_MAX-2 downto 0) & data_sync_2 ;
+            ssi_position_read1  <= ssi_position ;
+            run_ssi_clk_counter <= '0';             
+            ssi_state           <= PAUSE;
+          end if;
+        end if;
+       
+
+      when PAUSE =>
+        ssi_position_read <= ssi_position_read1;
+        if pt_counter >= pt_count then
+          pt_counter          <= 0;           
+          ssi_state           <= READY; -- Starta om nästa läsning
+          
+        else
+          pt_counter <= pt_counter + 1;
+        end if;
+      
+      when READY =>        
+        new_pos_ready <= '1';
+        ssi_state <= IDLE;
+
+      when others =>
+        ssi_state <= PAUSE;
+
+    end case;
+  end if;
   end process;
+
+
+
+
+  
+  
     
     
   ssi2_proc:process (reset_n, clk)
@@ -235,11 +333,11 @@ begin
       case ssi2_state is 
         when IDLE => 
           if start_receiving = '1' then
-            ssi2_state      <= RECEIVING;
+            ssi2_state       <= RECEIVING;
             ssi2_bit_counter <= 0;
-            parity          <= '0';
-            parity_check    <= '0';
-            parity_error    <= '0';
+            parity           <= '0';
+            parity_check     <= '0';
+            parity_error     <= '0';
           else
             ssi2_state <= IDLE;
           end if;
@@ -287,7 +385,7 @@ begin
       display_3_int        <= "11";  
       display_4_int        <= "11";  
       display_5_int        <= "11";   
-      led                  <= '1';
+     
     elsif clk 'event and clk = '1' then
       if ssi2_mode = '1' then
         if parity_error = '1' then
@@ -299,16 +397,16 @@ begin
           display_3_int        <= '0'& position_ssi2_read(3);   
           display_4_int        <= '0'& position_ssi2_read(4);  
           display_5_int        <= '0'& position_ssi2_read(5);
-          led                  <= '0';
+        
         end if;
       else
         display_0_int        <= "11";
-        display_1_int        <= '0' & ssi_position_read(3);
-        display_2_int        <= '0' & ssi_position_read(2);
-        display_3_int        <= '0' & ssi_position_read(1);   
-        display_4_int        <= '0' & ssi_position_read(0);  
+        display_1_int        <= '0' & ssi_position_read(0);
+        display_2_int        <= '0' & ssi_position_read(1);
+        display_3_int        <= '0' & ssi_position_read(2);   
+        display_4_int        <= '0' & ssi_position_read(3);  
         display_5_int        <= "11";
-        led                  <= '0';
+ 
       end if;
     end if;
   end process;

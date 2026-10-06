@@ -31,19 +31,25 @@ package ssi_pkg is
   constant NR_CLOCKS_PER_1_S            :integer := 10 * NR_CLOCKS_PER_100_MS;
   
   -- timer signals slave
-  constant tm_timer_count               :integer := 6 * NR_CLOCKS_PER_1_USEC - 1;
+  constant tm_timer_count               :integer := 50 * NR_CLOCKS_PER_1_USEC - 1;
   
   -- timer signals master
   constant pt_count                     :integer := 12 * NR_CLOCKS_PER_1_USEC - 1;
   constant ssi2_bit_count               :integer := 7;
   constant ssi2_clk_hp_count            :integer := 24;
-  constant ssi_clk_hp_count             :integer := 24;
-  constant ssi_bit_count                :integer := 5;  
+  constant ssi_clk_hp_count             :integer := 244;
+  constant ssi_bit_count                :integer := 33;  
 
   
-  constant POSITION_DATA_WIDTH_MAX      :integer := 4;
+  constant POSITION_DATA_WIDTH_MAX      :integer := 48;
   constant POS_NR_TO_TXD                :integer := 6; 
   constant PARITY_TO_TXD                :integer := 5; 
+  
+  --uart
+  constant NR_BYTES_SUPPORTED           :integer := 6;
+  constant BAUDRATE                     :integer := 9600;
+
+  
   
   
 end ssi_pkg;

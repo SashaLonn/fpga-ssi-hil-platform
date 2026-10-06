@@ -23,7 +23,7 @@ port(
     ssi_data                     :out std_logic;
     ssi2_mode                    :in  std_logic;
     position_set                 :in  std_logic;
-    position                     :in  std_logic_vector(3 downto 0)
+    position                     :in  std_logic_vector(47 downto 0)
 
 );
 end ssi_slave;
@@ -67,7 +67,7 @@ begin
 
 
   ssi_data                    <= ssi2_data_i when ssi2_mode = '1' else ssi_data_i;
-  pos_max                     <= "1111";
+  pos_max                     <= x"FFFFFFFFFFFF";
   ssi_CCW                     <= '0';
   gray_code                   <= '0';
   position_value_i            <= unsigned (position);
@@ -91,7 +91,7 @@ begin
       shift_transmit_register := '0';   
       if position_set = '1' then
         if start_transmission = '1' then 
-          if ssi_clk_sync_2 = '0' and ssi_clk_sync_3 = '1' then-- on falling edge of ssi2_mode
+          if ssi_clk_sync_2 = '0' and ssi_clk_sync_3 = '1' then
             transmission_running                  <= '1';
             transfer_bit_nr                       <= POSITION_DATA_WIDTH_MAX +1;     
               if ssi_CCW = '0' then -- if CW 0

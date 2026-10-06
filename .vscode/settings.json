@@ -1,0 +1,14 @@
+{
+  "idf.currentSetup": "C:\\Users\\sasha\\esp\\v5.5-rc1\\esp-idf",
+  "idf.customExtraVars": {
+    "OPENOCD_SCRIPTS": "C:\\Users\\sasha\\.espressif\\tools\\openocd-esp32\\v0.12.0-esp32-20230419/openocd-esp32/share/openocd/scripts",
+    "IDF_CCACHE_ENABLE": "1",
+    "ESP_ROM_ELF_DIR": "C:\\Users\\sasha\\.espressif\\tools\\esp-rom-elfs\\20230320/"
+  },
+  "clangd.path": "C:\\Users\\sasha\\.espressif\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=c:\\fpga-ssi-hil-framewor\\fpga-ssi-hil-platform\\build"
+  ]
+}
