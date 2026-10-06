@@ -1,8 +1,0 @@
-[libraries]
-defaultlib.files = [
-    "fpga/rtl/ssi_master.vhd",
-    "fpga/rtl/ssi_slave.vhd",
-    "fpga/rtl/ssi_pkg.vhd",
-    "fpga/rtl/ssi_top.vhd"
-]
-
